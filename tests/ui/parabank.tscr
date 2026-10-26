@@ -10,7 +10,7 @@ fixture customer { setup { var username = customerName(uuid()) } }
 flow home() { open "${base}/index.htm" }
 flow form(username: String, confirmation: String) {
  home()
- click css("a[href='register.htm']")
+ click css("a[href^='register.htm']")
  type css("[id=\"customer.firstName\"]") with "Automation"
  type css("[id=\"customer.lastName\"]") with "Example"
  type css("[id=\"customer.address.street\"]") with "123 Fictional Street"
@@ -48,7 +48,7 @@ test "Logout and login" tags ["web"] using [customer] {
 }
 test "Required fields" tags ["web", "negative"] {
  home()
- click css("a[href='register.htm']")
+ click css("a[href^='register.htm']")
  submit()
  expect visible(css("[id='customer.firstName.errors']"))
  expect text(css("[id='customer.firstName.errors']")) == "First name is required."
