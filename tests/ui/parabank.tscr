@@ -1,0 +1,67 @@
+const base = env("PARABANK_URL")
+fn customerName(id: String) -> String {
+ var name = "qa"
+ for each character in id {
+  if len(name) < 20 and character != "-" { name = name + character }
+ }
+ return name
+}
+fixture customer { setup { var username = customerName(uuid()) } }
+flow home() { open "${base}/index.htm" }
+flow form(username: String, confirmation: String) {
+ home()
+ click css("a[href='register.htm']")
+ type css("[id=\"customer.firstName\"]") with "Automation"
+ type css("[id=\"customer.lastName\"]") with "Example"
+ type css("[id=\"customer.address.street\"]") with "123 Fictional Street"
+ type css("[id=\"customer.address.city\"]") with "Demo City"
+ type css("[id=\"customer.address.state\"]") with "CA"
+ type css("[id=\"customer.address.zipCode\"]") with "90210"
+ type css("[id=\"customer.phoneNumber\"]") with "5551234567"
+ type css("[id=\"customer.ssn\"]") with "123456789"
+ type css("[id='customer.username']") with username
+ type css("[id='customer.password']") with "DemoPass42!"
+ type css("#repeatedPassword") with confirmation
+}
+flow submit() { click css("#customerForm input[type=submit]") }
+flow register(username: String) {
+ form(username, "DemoPass42!")
+ submit()
+ expect visible(css("a[href='logout.htm']"))
+ expect text(css("#rightPanel h1")) == "Welcome ${username}"
+}
+flow login(username: String) {
+ type css("input[name='username']") with username
+ type css("input[name='password']") with "DemoPass42!"
+ click css("#loginPanel input[type=submit]")
+}
+test "Register customer" tags ["web", "smoke"] using [customer] {
+ register(username)
+ screenshot "registration.png"
+}
+test "Logout and login" tags ["web"] using [customer] {
+ register(username)
+ click css("a[href='logout.htm']")
+ login(username)
+ expect visible(css("#accountTable"))
+ expect text(css("#rightPanel h1:visible")) == "Accounts Overview"
+}
+test "Required fields" tags ["web", "negative"] {
+ home()
+ click css("a[href='register.htm']")
+ submit()
+ expect visible(css("[id='customer.firstName.errors']"))
+ expect text(css("[id='customer.firstName.errors']")) == "First name is required."
+}
+test "Password mismatch" tags ["web", "negative"] using [customer] {
+ form(username, "Different42!")
+ submit()
+ expect visible(css("[id='repeatedPassword.errors']"))
+ expect text(css("[id='repeatedPassword.errors']")) == "Passwords did not match."
+}
+test "Unknown credentials" tags ["web", "negative"] using [customer] {
+ home()
+ login(username)
+ expect visible(css("#rightPanel .error"))
+ expect text(css("#rightPanel .error")) == "The username and password could not be verified."
+}

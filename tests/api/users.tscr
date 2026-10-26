@@ -1,0 +1,44 @@
+const base = env("DEMO_BASE_URL")
+const key = env("DEMO_API_KEY")
+fixture user {
+    setup {
+        var userId: String? = null
+        var email = "qa-${uuid()}@example.com"
+        var created = POST "${base}/users" { headers {"X-API-Key": key} body json {name: "Automation", email: email, role: "sales"} }
+        expect created.status == 201
+        userId = created.json.id
+    }
+    teardown {
+        if userId != null {
+            var cleanup = DELETE "${base}/users/${userId}" { headers {"X-API-Key": key} }
+            expect cleanup.status == 204 or cleanup.status == 404
+        }
+    }
+}
+test "Retrieve and partially update user" tags ["api", "smoke"] using [user] {
+    var response = GET "${base}/users/${userId}" { headers {"X-API-Key": key} }
+    expect response.status == 200
+    expect response.json.email == email
+    var changed = PATCH "${base}/users/${userId}" { headers {"X-API-Key": key} body json {active: false} }
+    expect changed.status == 200
+    expect changed.json.active == false
+}
+test "Duplicate email" tags ["api", "negative"] using [user] {
+    var response = POST "${base}/users" { headers {"X-API-Key": key} body json {name: "Duplicate", email: email} }
+    expect response.status == 409
+}
+test "Lifecycle conflict" tags ["api"] using [user] {
+    var initial = POST "${base}/users/${userId}/activate" { headers {"X-API-Key": key} }
+    expect initial.status == 409
+    var inactive = POST "${base}/users/${userId}/deactivate" { headers {"X-API-Key": key} }
+    expect inactive.status == 200
+    expect inactive.json.active == false
+    var conflict = POST "${base}/users/${userId}/deactivate" { headers {"X-API-Key": key} }
+    expect conflict.status == 409
+}
+test "Authentication and validation" tags ["api", "negative"] {
+    var unauth = GET "${base}/users" {}
+    expect unauth.status == 401
+    var invalid = POST "${base}/users" { headers {"X-API-Key": key} body json {name: "", email: "bad"} }
+    expect invalid.status == 422
+}

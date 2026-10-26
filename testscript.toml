@@ -1,0 +1,6 @@
+[testscript]
+provider = "playwright"
+browser = "chromium"
+headless = true
+timeout = 20
+output = "testscript-results"

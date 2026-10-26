@@ -1,0 +1,2 @@
+testscript-lang[playwright] @ git+https://github.com/angel-valdezzz/testscript.git@879b634ac1ebb329e38453ab6b479b54e66d0659
+git+https://github.com/angel-valdezzz/demo-users-api.git@971be3caf9cd88375c2dab8c935772c5fd2b95eb
