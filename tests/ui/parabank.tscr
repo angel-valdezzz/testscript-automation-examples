@@ -2,7 +2,7 @@ const base = env("PARABANK_URL")
 fn customerName(id: String) -> String {
  var name = "qa"
  for each character in id {
-  if len(name) < 20 and character != "-" { name = name + character }
+  if len(name) < 20 and character != "-" { name = name + str(character) }
  }
  return name
 }
